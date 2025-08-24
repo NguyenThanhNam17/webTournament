@@ -56,10 +56,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var error_1 = require("../../base/error");
 var baseRouter_1 = require("../../base/baseRouter");
-var user_model_1 = require("../../model/user.model");
+var user_model_1 = require("../../model/user/user.model");
 var token_helper_1 = require("../../helper/token.helper");
 var password_hash_1 = __importDefault(require("password-hash"));
 var role_const_1 = require("../../constants/role.const");
+var user_helper_1 = require("../../model/user/user.helper");
 var UserRoute = /** @class */ (function (_super) {
     __extends(UserRoute, _super);
     function UserRoute() {
@@ -67,6 +68,44 @@ var UserRoute = /** @class */ (function (_super) {
     }
     UserRoute.prototype.customRouting = function () {
         this.router.post("/register", this.route(this.register));
+        this.router.post("/login", this.route(this.login));
+        this.router.get("/getAllUser", this.route(this.getAllUser));
+        this.router.get("/getOneUser", this.route(this.getOneUser));
+        this.router.get("/findOne", [this.authentication], this.route(this.findOne));
+        this.router.post("/createUser", [this.authentication], this.route(this.createUser));
+        this.router.post("/deleteUser", [this.authentication], this.route(this.deleteUser));
+        this.router.post("/updateUser", [this.authentication], this.route(this.updateUser));
+    };
+    UserRoute.prototype.authentication = function (req, res, next) {
+        return __awaiter(this, void 0, void 0, function () {
+            var tokenData, user, _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _b.trys.push([0, 4, , 5]);
+                        if (!req.get("x-token")) {
+                            throw error_1.ErrorHelper.unauthorized();
+                        }
+                        tokenData = token_helper_1.TokenHelper.decodeToken(req.get("x-token"));
+                        if (![role_const_1.ROLES.ADMIN, role_const_1.ROLES.CLIENT].includes(tokenData.role_)) return [3 /*break*/, 2];
+                        return [4 /*yield*/, user_model_1.UserModel.findById(tokenData._id)];
+                    case 1:
+                        user = _b.sent();
+                        if (!user) {
+                            throw error_1.ErrorHelper.userNotExist();
+                        }
+                        req.tokenInfo = tokenData;
+                        next();
+                        return [3 /*break*/, 3];
+                    case 2: throw error_1.ErrorHelper.permissionDeny();
+                    case 3: return [3 /*break*/, 5];
+                    case 4:
+                        _a = _b.sent();
+                        throw error_1.ErrorHelper.unauthorized();
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
     };
     UserRoute.prototype.register = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
@@ -109,7 +148,222 @@ var UserRoute = /** @class */ (function (_super) {
             });
         });
     };
+    UserRoute.prototype.login = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _a, username, password, user, check, key;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _a = req.body, username = _a.username, password = _a.password;
+                        if (!username || !password) {
+                            throw error_1.ErrorHelper.requestDataInvalid("request data");
+                        }
+                        return [4 /*yield*/, user_model_1.UserModel.findOne({
+                                $or: [{ phone: username }, { username: username }],
+                            })];
+                    case 1:
+                        user = _b.sent();
+                        if (!user) {
+                            throw error_1.ErrorHelper.userNotExist();
+                        }
+                        check = password_hash_1.default.verify(password, user.password);
+                        if (!check) {
+                            throw error_1.ErrorHelper.userPasswordNotCorrect();
+                        }
+                        key = token_helper_1.TokenHelper.generateKey();
+                        return [2 /*return*/, res.status(200).json({
+                                status: 200,
+                                code: "200",
+                                message: "succes",
+                                data: {
+                                    user: user,
+                                    token: new user_helper_1.UserHelper(user).getToken(key),
+                                },
+                            })];
+                }
+            });
+        });
+    };
+    UserRoute.prototype.getAllUser = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var users;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, user_model_1.UserModel.find()];
+                    case 1:
+                        users = _a.sent();
+                        if (!users) {
+                            throw error_1.ErrorHelper.userNotExist();
+                        }
+                        return [2 /*return*/, res.status(200).json({
+                                status: 200,
+                                code: "200",
+                                message: "succes",
+                                data: {
+                                    users: users,
+                                },
+                            })];
+                }
+            });
+        });
+    };
+    UserRoute.prototype.getOneUser = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var id, user;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        id = req.body.id;
+                        if (!id) {
+                            throw error_1.ErrorHelper.requestDataInvalid("request data");
+                        }
+                        return [4 /*yield*/, user_model_1.UserModel.findById({ _id: id })];
+                    case 1:
+                        user = _a.sent();
+                        if (!user) {
+                            throw error_1.ErrorHelper.userNotExist();
+                        }
+                        return [2 /*return*/, res.status(200).json({
+                                status: 200,
+                                code: "200",
+                                message: "succes",
+                                data: {
+                                    user: user,
+                                },
+                            })];
+                }
+            });
+        });
+    };
+    UserRoute.prototype.findOne = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var name, user;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        name = req.body.name;
+                        if (!name) {
+                            throw error_1.ErrorHelper.requestDataInvalid("request data");
+                        }
+                        return [4 /*yield*/, user_model_1.UserModel.findOne({ name: name })];
+                    case 1:
+                        user = _a.sent();
+                        if (!user) {
+                            throw error_1.ErrorHelper.userNotExist();
+                        }
+                        return [2 /*return*/, res.status(200).json({
+                                status: 200,
+                                code: "200",
+                                message: "succes",
+                                data: {
+                                    user: user,
+                                },
+                            })];
+                }
+            });
+        });
+    };
+    UserRoute.prototype.createUser = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _a, name, phone, email, password, key, user;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        if (role_const_1.ROLES.ADMIN != req.tokenInfo.role_) {
+                            throw error_1.ErrorHelper.permissionDeny();
+                        }
+                        _a = req.body, name = _a.name, phone = _a.phone, email = _a.email, password = _a.password;
+                        if (!name || !phone || !email || !password) {
+                            throw error_1.ErrorHelper.requestDataInvalid("request data");
+                        }
+                        key = token_helper_1.TokenHelper.generateKey();
+                        user = new user_model_1.UserModel({
+                            name: name,
+                            phone: phone,
+                            email: email,
+                            password: password_hash_1.default.generate(password),
+                            key: key,
+                            role: role_const_1.ROLES.CLIENT,
+                        });
+                        return [4 /*yield*/, user.save()];
+                    case 1:
+                        _b.sent();
+                        return [2 /*return*/, res.status(200).json({
+                                status: 200,
+                                code: "200",
+                                message: "succes",
+                                data: {
+                                    user: user,
+                                },
+                            })];
+                }
+            });
+        });
+    };
+    UserRoute.prototype.deleteUser = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var id, user;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (role_const_1.ROLES.ADMIN != req.tokenInfo.role_) {
+                            throw error_1.ErrorHelper.permissionDeny();
+                        }
+                        id = req.body.id;
+                        return [4 /*yield*/, user_model_1.UserModel.findById(id)];
+                    case 1:
+                        user = _a.sent();
+                        if (!user) {
+                            throw error_1.ErrorHelper.userNotExist();
+                        }
+                        return [4 /*yield*/, user_model_1.UserModel.deleteOne({ _id: id })];
+                    case 2:
+                        _a.sent();
+                        return [2 /*return*/, res.status(200).json({
+                                status: 200,
+                                code: "200",
+                                message: "succes",
+                                data: {
+                                    user: user
+                                }
+                            })];
+                }
+            });
+        });
+    };
+    UserRoute.prototype.updateUser = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _a, id, name, phone, password, email, user;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _a = req.body, id = _a.id, name = _a.name, phone = _a.phone, password = _a.password, email = _a.email;
+                        return [4 /*yield*/, user_model_1.UserModel.findById(id)];
+                    case 1:
+                        user = _b.sent();
+                        if (!user) {
+                            throw error_1.ErrorHelper.userNotExist();
+                        }
+                        user.name = name || user.name;
+                        user.phone = phone || user.phone;
+                        user.email = email || user.email;
+                        user.password = password || user.password;
+                        return [4 /*yield*/, user.save()];
+                    case 2:
+                        _b.sent();
+                        return [2 /*return*/, res.status(200).json({
+                                status: 200,
+                                code: "200",
+                                message: "succes",
+                                data: {
+                                    user: user
+                                }
+                            })];
+                }
+            });
+        });
+    };
     return UserRoute;
 }(baseRouter_1.BaseRoute));
-exports.default = UserRoute;
+exports.default = new UserRoute().router;
 //# sourceMappingURL=user.route.js.map

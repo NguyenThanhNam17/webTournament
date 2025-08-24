@@ -42,10 +42,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var express_1 = __importDefault(require("express"));
 var dotenv_1 = __importDefault(require("dotenv"));
 var mongoose_1 = __importDefault(require("mongoose"));
+var routers_1 = __importDefault(require("./routers"));
 dotenv_1.default.config();
 var app = (0, express_1.default)();
 var PORT = process.env.PORT;
 var MONGO_URI = process.env.MONGO_URI;
+app.use(express_1.default.json()); // parse application/json
+app.use(express_1.default.urlencoded({ extended: true })); // parse application/x-www-form-urlencoded
 //connect to MongoDB
 function connectToMongoDB(connectionString) {
     return __awaiter(this, void 0, void 0, function () {
@@ -66,6 +69,7 @@ try {
 catch (err) {
     console.log("Error connecting to MongoDB:", err);
 }
+app.use("/", routers_1.default);
 app.listen(PORT, function () {
     console.log("App is running at http://localhost:".concat(PORT));
 });

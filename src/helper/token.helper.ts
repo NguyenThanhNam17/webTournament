@@ -4,7 +4,7 @@ dotenv.config();
 let secretKey: any = process.env.SECRET;
 export interface IPayloadToken {
   role_?: string;
-  _id?: string;
+  _id?: any;
   username?: string;
   key?: string;
   email?: string;

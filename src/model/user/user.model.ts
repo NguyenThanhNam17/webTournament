@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { BaseDocument } from "../base/baseModel";
+import { BaseDocument } from "../../base/baseModel";
 
 //định nghĩa các type cho user
 export type IUser = BaseDocument & {
@@ -25,5 +25,5 @@ const UserSchema = new mongoose.Schema(
   }
 );
 
-const UserModel = mongoose.model<IUser>("User", UserSchema);
+const UserModel = mongoose.model<IUser>("user", UserSchema);
 export { UserModel };

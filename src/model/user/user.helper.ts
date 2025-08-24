@@ -1,4 +1,4 @@
-import { TokenHelper } from "../helper/token.helper";
+import { TokenHelper } from "../../helper/token.helper";
 import { IUser } from "./user.model";
 
 export class UserHelper {
