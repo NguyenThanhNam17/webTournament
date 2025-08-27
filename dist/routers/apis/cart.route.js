@@ -51,26 +51,28 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var product_model_1 = require("../../model/product/product.model");
 var error_1 = require("../../base/error");
 var baseRouter_1 = require("../../base/baseRouter");
-var token_helper_1 = require("../..//helper/token.helper");
 var user_model_1 = require("../../model/user/user.model");
+var token_helper_1 = require("../../helper/token.helper");
 var role_const_1 = require("../../constants/role.const");
-var ProductRoute = /** @class */ (function (_super) {
-    __extends(ProductRoute, _super);
-    function ProductRoute() {
+var cart_model_1 = require("../../model/cart/cart.model");
+var model_const_1 = require("../../constants/model.const");
+var product_model_1 = require("../../model/product/product.model");
+var CartRoute = /** @class */ (function (_super) {
+    __extends(CartRoute, _super);
+    function CartRoute() {
         return _super.call(this) || this;
     }
-    ProductRoute.prototype.customRouting = function () {
-        this.router.get("/getAllProduct", this.route(this.getAllProduct));
-        this.router.get("/getOneProduct", this.route(this.getOneProduct));
+    CartRoute.prototype.customRouting = function () {
+        this.router.get("/getAllCart", [this.authentication], this.route(this.getAllCart));
+        this.router.get("/getOneCart", [this.authentication], this.route(this.getOneCart));
         this.router.get("/findOne", [this.authentication], this.route(this.findOne));
-        this.router.post("/createProduct", [this.authentication], this.route(this.createProduct));
-        this.router.post("/deleteProduct", [this.authentication], this.route(this.deleteProduct));
-        this.router.post("/updateProduct", [this.authentication], this.route(this.updateProduct));
+        this.router.post("/addCartProductToCart", [this.authentication], this.route(this.addCartProductToCart));
+        this.router.post("/deleteCart", [this.authentication], this.route(this.deleteCart));
+        this.router.post("/updateCart", [this.authentication], this.route(this.updateCart));
     };
-    ProductRoute.prototype.authentication = function (req, res, next) {
+    CartRoute.prototype.authentication = function (req, res, next) {
         return __awaiter(this, void 0, void 0, function () {
             var tokenData, user, _a;
             return __generator(this, function (_b) {
@@ -101,23 +103,26 @@ var ProductRoute = /** @class */ (function (_super) {
             });
         });
     };
-    ProductRoute.prototype.getAllProduct = function (req, res) {
+    CartRoute.prototype.getAllCart = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var product;
+            var carts;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, product_model_1.ProductModel.find()];
+                    case 0: return [4 /*yield*/, cart_model_1.CartModel.find({
+                            userId: req.tokenInfo._id,
+                            status: model_const_1.CartStatusEnum.PENDING,
+                        })];
                     case 1:
-                        product = _a.sent();
-                        if (!product) {
-                            throw error_1.ErrorHelper.forbidden("Không có sẵn phẩm trong danh sách");
+                        carts = _a.sent();
+                        if (!carts) {
+                            throw error_1.ErrorHelper.forbidden("Not cart");
                         }
                         res.status(200).json({
                             status: 200,
                             code: "200",
                             message: "succes",
                             data: {
-                                product: product,
+                                carts: carts,
                             },
                         });
                         return [2 /*return*/];
@@ -125,28 +130,31 @@ var ProductRoute = /** @class */ (function (_super) {
             });
         });
     };
-    ProductRoute.prototype.getOneProduct = function (req, res) {
+    CartRoute.prototype.getOneCart = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var id, product;
+            var id, cart;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         id = req.body.id;
+                        if (req.tokenInfo.role_ != role_const_1.ROLES.ADMIN) {
+                            throw error_1.ErrorHelper.permissionDeny();
+                        }
                         if (!id) {
                             throw error_1.ErrorHelper.requestDataInvalid("request data");
                         }
-                        return [4 /*yield*/, product_model_1.ProductModel.findById(id)];
+                        return [4 /*yield*/, cart_model_1.CartModel.findById(id)];
                     case 1:
-                        product = _a.sent();
-                        if (!product) {
-                            throw error_1.ErrorHelper.forbidden("sản phẩm không tồn tại");
+                        cart = _a.sent();
+                        if (!cart) {
+                            throw error_1.ErrorHelper.forbidden("not cart");
                         }
                         res.status(200).json({
                             status: 200,
                             code: "200",
                             message: "succes",
                             data: {
-                                product: product,
+                                cart: cart,
                             },
                         });
                         return [2 /*return*/];
@@ -154,9 +162,9 @@ var ProductRoute = /** @class */ (function (_super) {
             });
         });
     };
-    ProductRoute.prototype.findOne = function (req, res) {
+    CartRoute.prototype.findOne = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var name, product;
+            var name, cart;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -164,18 +172,18 @@ var ProductRoute = /** @class */ (function (_super) {
                         if (!name) {
                             throw error_1.ErrorHelper.requestDataInvalid("request data");
                         }
-                        return [4 /*yield*/, product_model_1.ProductModel.findOne({ name: name })];
+                        return [4 /*yield*/, cart_model_1.CartModel.findById(name)];
                     case 1:
-                        product = _a.sent();
-                        if (!product) {
-                            throw error_1.ErrorHelper.forbidden("Không có sản phẩm");
+                        cart = _a.sent();
+                        if (!cart) {
+                            throw error_1.ErrorHelper.forbidden("not cart");
                         }
                         res.status(200).json({
                             status: 200,
                             code: "200",
                             message: "succes",
                             data: {
-                                product: product,
+                                cart: cart,
                             },
                         });
                         return [2 /*return*/];
@@ -183,31 +191,37 @@ var ProductRoute = /** @class */ (function (_super) {
             });
         });
     };
-    ProductRoute.prototype.createProduct = function (req, res) {
+    CartRoute.prototype.addCartProductToCart = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, name, image, describe, price, product;
+            var _a, quantity, productId, product, cart;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        _a = req.body, name = _a.name, image = _a.image, describe = _a.describe, price = _a.price;
-                        if (!name || !image || !describe || !price) {
+                        _a = req.body, quantity = _a.quantity, productId = _a.productId;
+                        if (!quantity || !productId) {
                             throw error_1.ErrorHelper.requestDataInvalid("request data");
                         }
-                        product = new product_model_1.ProductModel({
-                            name: name,
-                            image: image,
-                            describe: describe,
-                            price: price,
-                        });
-                        return [4 /*yield*/, product.save()];
+                        return [4 /*yield*/, product_model_1.ProductModel.findById(productId)];
                     case 1:
+                        product = _b.sent();
+                        if (!product) {
+                            throw error_1.ErrorHelper.forbidden("Không tìm thấy sản phẩm");
+                        }
+                        cart = new cart_model_1.CartModel({
+                            userId: req.tokenInfo._id,
+                            quantity: quantity,
+                            productId: productId,
+                            status: model_const_1.CartStatusEnum.PENDING,
+                        });
+                        return [4 /*yield*/, cart.save()];
+                    case 2:
                         _b.sent();
                         res.status(200).json({
                             status: 200,
                             code: "200",
                             message: "succes",
                             data: {
-                                product: product,
+                                cart: cart,
                             },
                         });
                         return [2 /*return*/];
@@ -215,73 +229,70 @@ var ProductRoute = /** @class */ (function (_super) {
             });
         });
     };
-    ProductRoute.prototype.deleteProduct = function (req, res) {
+    CartRoute.prototype.deleteCart = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var id, product;
+            var id, cart;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        if (req.tokenInfo.role_ != role_const_1.ROLES.ADMIN) {
+                            throw error_1.ErrorHelper.permissionDeny();
+                        }
                         id = req.body.id;
                         if (!id) {
                             throw error_1.ErrorHelper.requestDataInvalid("request data");
                         }
-                        return [4 /*yield*/, product_model_1.ProductModel.findById(id)];
+                        return [4 /*yield*/, cart_model_1.CartModel.findById(id)];
                     case 1:
-                        product = _a.sent();
-                        if (!product) {
-                            throw error_1.ErrorHelper.forbidden("không có sản phẩm để xoá");
+                        cart = _a.sent();
+                        if (!cart) {
+                            throw error_1.ErrorHelper.forbidden("not cart");
                         }
-                        return [4 /*yield*/, product_model_1.ProductModel.deleteOne({ _id: id })];
+                        return [4 /*yield*/, cart_model_1.CartModel.deleteOne(id)];
                     case 2:
                         _a.sent();
                         res.status(200).json({
                             status: 200,
                             code: "200",
                             message: "succes",
-                            data: {
-                                product: product,
-                            },
+                            data: { cart: cart },
                         });
                         return [2 /*return*/];
                 }
             });
         });
     };
-    ProductRoute.prototype.updateProduct = function (req, res) {
+    CartRoute.prototype.updateCart = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, id, name, describe, price, image, product;
+            var _a, id, productId, quantity, status, cart;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        _a = req.body, id = _a.id, name = _a.name, describe = _a.describe, price = _a.price, image = _a.image;
-                        if (!id) {
-                            throw error_1.ErrorHelper.requestDataInvalid("request data");
-                        }
-                        return [4 /*yield*/, product_model_1.ProductModel.findById(id)];
+                        _a = req.body, id = _a.id, productId = _a.productId, quantity = _a.quantity, status = _a.status;
+                        return [4 /*yield*/, cart_model_1.CartModel.findById(id)];
                     case 1:
-                        product = _b.sent();
-                        if (!product) {
-                            throw error_1.ErrorHelper.forbidden("Không tìm thấy sản phẩm");
+                        cart = _b.sent();
+                        if (!cart) {
+                            throw error_1.ErrorHelper.forbidden("not cart");
                         }
-                        product.name = name || product.name;
-                        product.price = price || product.price;
-                        product.image = image || product.image;
-                        product.describe = describe || product.describe;
-                        product.save();
+                        cart.productId = productId || cart.productId;
+                        cart.quantity = quantity || cart.quantity;
+                        cart.status = status || cart.status;
+                        return [4 /*yield*/, cart.save()];
+                    case 2:
+                        _b.sent();
                         res.status(200).json({
                             status: 200,
                             code: "200",
                             message: "succes",
-                            data: {
-                                product: product,
-                            },
+                            data: { cart: cart },
                         });
                         return [2 /*return*/];
                 }
             });
         });
     };
-    return ProductRoute;
+    return CartRoute;
 }(baseRouter_1.BaseRoute));
-exports.default = new ProductRoute().router;
-//# sourceMappingURL=product.route.js.map
+exports.default = new CartRoute().route;
+//# sourceMappingURL=cart.route.js.map

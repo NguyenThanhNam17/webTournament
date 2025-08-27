@@ -33,19 +33,13 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UserModel = void 0;
+exports.WalletSchema = void 0;
 var mongoose_1 = __importStar(require("mongoose"));
-var UserSchema = new mongoose_1.default.Schema({
-    name: { type: String },
-    phone: { type: String },
-    email: { type: String },
-    password: { type: String },
-    walletId: { type: mongoose_1.Schema.Types.ObjectId, ref: "Wallet" },
-    role: { type: String },
-    key: { type: String },
-}, {
-    timestamps: true,
+exports.WalletSchema = new mongoose_1.default.Schema({
+    userId: { type: mongoose_1.Schema.Types.ObjectId, ref: "User" },
+    balance: { type: Number },
+    passCode: { type: Number },
 });
-var UserModel = mongoose_1.default.model("user", UserSchema);
-exports.UserModel = UserModel;
-//# sourceMappingURL=user.model.js.map
+var WalletModel = mongoose_1.default.model("Wallet", exports.WalletSchema);
+exports.default = WalletModel;
+//# sourceMappingURL=wallet.model.js.map

@@ -144,7 +144,11 @@ class ProductRoute extends BaseRoute {
     if (!id) {
       throw ErrorHelper.requestDataInvalid("request data");
     }
-    let product = await ProductModel.deleteOne({ id: id });
+    let product = await ProductModel.findById(id);
+    if(!product){
+      throw ErrorHelper.forbidden("không có sản phẩm để xoá");
+    }
+    await ProductModel.deleteOne({_id:id});
     res.status(200).json({
       status: 200,
       code: "200",

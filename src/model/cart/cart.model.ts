@@ -3,10 +3,10 @@ import { BaseDocument } from "../../base/baseModel";
 import { CartStatusEnum } from "../../constants/model.const";
 
 export type ICart = BaseDocument&{
-    userId:string;
-    productId: string;
-    quantity:number;
-    status:string;
+    userId?:string;
+    productId?: string;
+    quantity?:number;
+    status?:string;
 }
 
 const CartSchema = new mongoose.Schema({

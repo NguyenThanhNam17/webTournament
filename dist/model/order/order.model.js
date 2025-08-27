@@ -33,19 +33,18 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UserModel = void 0;
+exports.OrderSchema = void 0;
 var mongoose_1 = __importStar(require("mongoose"));
-var UserSchema = new mongoose_1.default.Schema({
-    name: { type: String },
-    phone: { type: String },
-    email: { type: String },
-    password: { type: String },
-    walletId: { type: mongoose_1.Schema.Types.ObjectId, ref: "Wallet" },
-    role: { type: String },
-    key: { type: String },
-}, {
-    timestamps: true,
+var model_const_1 = require("../../constants/model.const");
+exports.OrderSchema = new mongoose_1.default.Schema({
+    userId: { type: mongoose_1.Schema.Types.ObjectId, ref: "User" },
+    cartIds: [{ type: String }],
+    price: { type: Number },
+    paymentMethod: { type: String },
+    status: { type: String, enum: Object.values(model_const_1.OrderStatusEnum) },
+    totalPrice: { type: Number, default: 0 },
+    paid: { type: Boolean },
 });
-var UserModel = mongoose_1.default.model("user", UserSchema);
-exports.UserModel = UserModel;
-//# sourceMappingURL=user.model.js.map
+var OrderModel = mongoose_1.default.model("Order", exports.OrderSchema);
+exports.default = OrderModel;
+//# sourceMappingURL=order.model.js.map
