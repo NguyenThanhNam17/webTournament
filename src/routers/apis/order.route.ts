@@ -24,6 +24,31 @@ class OrderRoute extends BaseRoute {
       [this.authentication],
       this.route(this.createOrder)
     );
+    this.router.get(
+      "/listOrder",
+      [this.authentication],
+      this.route(this.listOrder)
+    );
+    this.router.get(
+      "/getOneOrder/:id",
+      [this.authentication],
+      this.route(this.getOneOrder)
+    );
+    this.router.post(
+      "/cancelOrder",
+      [this.authentication],
+      this.route(this.cancelOrder)
+    );
+    this.router.post(
+      "/deleteOneOrder",
+      [this.authentication],
+      this.route(this.deleteOneOrder)
+    );
+    this.router.post(
+      "/updateOrderStatusForAdmin",
+      [this.authentication],
+      this.route(this.updateOrderStatusForAdmin)
+    );
   }
 
   async authentication(req: Request, res: Response, next: NextFunction) {
@@ -99,6 +124,107 @@ class OrderRoute extends BaseRoute {
         $set: { status: CartStatusEnum.SUCCES },
       }
     );
+    res.status(200).json({
+      status: 200,
+      code: "200",
+      message: "succes",
+      data: {
+        order,
+      },
+    });
+  }
+
+  async listOrder(req: Request, res: Response) {
+    let listOrder = await OrderModel.find({ userId: req.tokenInfo._id });
+    if (listOrder.length == 0) {
+      throw ErrorHelper.forbidden("không có order nào của người dùng nào");
+    }
+    res.status(200).json({
+      status: 200,
+      code: "200",
+      message: "succes",
+      data: { listOrder },
+    });
+  }
+
+  async getOneOrder(req: Request, res: Response) {
+    let { id } = req.params;
+    if (!id) {
+      throw ErrorHelper.requestDataInvalid("request data");
+    }
+    let order = await OrderModel.findById(id);
+    if (!order) {
+      throw ErrorHelper.forbidden("không tồn tại order này");
+    }
+    res.status(200).json({
+      status: 200,
+      code: "200",
+      message: "succes",
+      data: {
+        order,
+      },
+    });
+  }
+
+  async cancelOrder(req: Request, res: Response) {
+    let { id } = req.body;
+    let order = await OrderModel.findById(id);
+    if (!order) {
+      throw ErrorHelper.forbidden("không tồn tại order này");
+    }
+    order.status = OrderStatusEnum.FAILED;
+    order.save();
+    res.status(200).json({
+      status: 200,
+      code: "200",
+      message: "succes",
+      data: {
+        order,
+      },
+    });
+  }
+
+  async deleteOneOrder(req: Request, res: Response) {
+    let { id } = req.body;
+    let order = await OrderModel.findById(id);
+    if (!order) {
+      throw ErrorHelper.forbidden("không tồn tại order này");
+    }
+
+    await OrderModel.deleteOne({ _id: id });
+
+    res.status(200).json({
+      status: 200,
+      code: "200",
+      message: "succes",
+      data: {
+        order,
+      },
+    });
+  }
+
+  async updateOrderStatusForAdmin(req: Request, res: Response) {
+    let { orderId, status } = req.body;
+    if (!orderId || !status) {
+      throw ErrorHelper.requestDataInvalid("request data");
+    }
+
+    let order = await OrderModel.findById(orderId);
+    if (!order) {
+      throw ErrorHelper.forbidden("Không tìm thấy order");
+    }
+
+    if (
+      ![
+        OrderStatusEnum.FAILED,
+        OrderStatusEnum.PENDING,
+        OrderStatusEnum.SUCCESS,
+      ].includes(status)
+    ) {
+      throw ErrorHelper.forbidden("không đúng trạng thái của order");
+    }
+    order.status = status;
+    order.save();
     res.status(200).json({
       status: 200,
       code: "200",

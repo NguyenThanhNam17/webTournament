@@ -17,7 +17,10 @@ class ProductRoute extends BaseRoute {
 
   customRouting() {
     this.router.get("/getAllProduct", this.route(this.getAllProduct));
-    this.router.get("/getOneProduct", this.route(this.getOneProduct));
+    this.router.get(
+      "/getOneProduct/:idProduct",
+      this.route(this.getOneProduct)
+    );
     this.router.get(
       "/findOne",
       [this.authentication],
@@ -37,6 +40,11 @@ class ProductRoute extends BaseRoute {
       "/updateProduct",
       [this.authentication],
       this.route(this.updateProduct)
+    );
+    this.router.get(
+      "/getOneProductForSlug",
+      [this.authentication],
+      this.route(this.getOneProductForSlug)
     );
   }
 
@@ -77,7 +85,7 @@ class ProductRoute extends BaseRoute {
   }
 
   async getOneProduct(req: Request, res: Response) {
-    let { id } = req.body;
+    let { id } = req.params;
     if (!id) {
       throw ErrorHelper.requestDataInvalid("request data");
     }
@@ -145,10 +153,10 @@ class ProductRoute extends BaseRoute {
       throw ErrorHelper.requestDataInvalid("request data");
     }
     let product = await ProductModel.findById(id);
-    if(!product){
+    if (!product) {
       throw ErrorHelper.forbidden("không có sản phẩm để xoá");
     }
-    await ProductModel.deleteOne({_id:id});
+    await ProductModel.deleteOne({ _id: id });
     res.status(200).json({
       status: 200,
       code: "200",
@@ -174,6 +182,25 @@ class ProductRoute extends BaseRoute {
     product.describe = describe || product.describe;
 
     product.save();
+    res.status(200).json({
+      status: 200,
+      code: "200",
+      message: "succes",
+      data: {
+        product,
+      },
+    });
+  }
+
+  async getOneProductForSlug(req: Request, res: Response) {
+    let { slug } = req.body;
+    if (!slug) {
+      throw ErrorHelper.requestDataInvalid("request data");
+    }
+    let product = await ProductModel.findOne({ slug: slug });
+    if (!product) {
+      throw ErrorHelper.forbidden("Không tồn tại sản phẩm");
+    }
     res.status(200).json({
       status: 200,
       code: "200",

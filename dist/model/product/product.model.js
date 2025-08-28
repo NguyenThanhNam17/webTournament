@@ -10,6 +10,7 @@ var ProductSchema = new mongoose_1.default.Schema({
     price: { type: Number, default: 0 },
     image: { type: String },
     describe: { type: String },
+    slug: { type: String },
 }, { timestamps: true });
 var ProductModel = mongoose_1.default.model("Product", ProductSchema);
 exports.ProductModel = ProductModel;

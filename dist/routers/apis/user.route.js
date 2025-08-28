@@ -70,6 +70,7 @@ var UserRoute = /** @class */ (function (_super) {
         this.router.post("/register", this.route(this.register));
         this.router.post("/login", this.route(this.login));
         this.router.get("/getAllUser", this.route(this.getAllUser));
+        this.router.get("/getMe", [this.authentication], this.route(this.getMe));
         this.router.get("/getOneUser", this.route(this.getOneUser));
         this.router.get("/findOne", [this.authentication], this.route(this.findOne));
         this.router.post("/createUser", [this.authentication], this.route(this.createUser));
@@ -142,6 +143,28 @@ var UserRoute = /** @class */ (function (_super) {
                             data: {
                                 user: user,
                             },
+                        });
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    UserRoute.prototype.getMe = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var user;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, user_model_1.UserModel.findById(req.tokenInfo._id)];
+                    case 1:
+                        user = _a.sent();
+                        if (!user) {
+                            throw error_1.ErrorHelper.userNotExist();
+                        }
+                        res.status(200).json({
+                            status: 200,
+                            code: "200",
+                            message: "succes",
+                            data: { user: user },
                         });
                         return [2 /*return*/];
                 }
@@ -324,8 +347,8 @@ var UserRoute = /** @class */ (function (_super) {
                                 code: "200",
                                 message: "succes",
                                 data: {
-                                    user: user
-                                }
+                                    user: user,
+                                },
                             })];
                 }
             });
@@ -356,8 +379,8 @@ var UserRoute = /** @class */ (function (_super) {
                                 code: "200",
                                 message: "succes",
                                 data: {
-                                    user: user
-                                }
+                                    user: user,
+                                },
                             })];
                 }
             });

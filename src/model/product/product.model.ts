@@ -2,10 +2,11 @@ import mongoose from "mongoose";
 import { BaseDocument } from "../../base/baseModel";
 
 export type IProduct = BaseDocument & {
-  name: string;
-  price: number;
-  image: string;
-  describe: string;
+  name?: string;
+  price?: number;
+  image?: string;
+  describe?: string;
+  slug?: string;
 };
 
 const ProductSchema = new mongoose.Schema(
@@ -14,6 +15,7 @@ const ProductSchema = new mongoose.Schema(
     price: { type: Number, default: 0 },
     image: { type: String },
     describe: { type: String },
+    slug: { type: String },
   },
   { timestamps: true }
 );

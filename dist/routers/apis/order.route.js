@@ -71,6 +71,11 @@ var OrderRoute = /** @class */ (function (_super) {
     }
     OrderRoute.prototype.customRouting = function () {
         this.router.post("/createOrder", [this.authentication], this.route(this.createOrder));
+        this.router.get("/listOrder", [this.authentication], this.route(this.listOrder));
+        this.router.get("/getOneOrder/:id", [this.authentication], this.route(this.getOneOrder));
+        this.router.post("/cancelOrder", [this.authentication], this.route(this.cancelOrder));
+        this.router.post("/deleteOneOrder", [this.authentication], this.route(this.deleteOneOrder));
+        this.router.post("/updateOrderStatusForAdmin", [this.authentication], this.route(this.updateOrderStatusForAdmin));
     };
     OrderRoute.prototype.authentication = function (req, res, next) {
         return __awaiter(this, void 0, void 0, function () {
@@ -170,6 +175,152 @@ var OrderRoute = /** @class */ (function (_super) {
                             })];
                     case 8:
                         _b.sent();
+                        res.status(200).json({
+                            status: 200,
+                            code: "200",
+                            message: "succes",
+                            data: {
+                                order: order,
+                            },
+                        });
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    OrderRoute.prototype.listOrder = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var listOrder;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, order_model_1.default.find({ userId: req.tokenInfo._id })];
+                    case 1:
+                        listOrder = _a.sent();
+                        if (listOrder.length == 0) {
+                            throw error_1.ErrorHelper.forbidden("không có order nào của người dùng nào");
+                        }
+                        res.status(200).json({
+                            status: 200,
+                            code: "200",
+                            message: "succes",
+                            data: { listOrder: listOrder },
+                        });
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    OrderRoute.prototype.getOneOrder = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var id, order;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        id = req.params.id;
+                        if (!id) {
+                            throw error_1.ErrorHelper.requestDataInvalid("request data");
+                        }
+                        return [4 /*yield*/, order_model_1.default.findById(id)];
+                    case 1:
+                        order = _a.sent();
+                        if (!order) {
+                            throw error_1.ErrorHelper.forbidden("không tồn tại order này");
+                        }
+                        res.status(200).json({
+                            status: 200,
+                            code: "200",
+                            message: "succes",
+                            data: {
+                                order: order,
+                            },
+                        });
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    OrderRoute.prototype.cancelOrder = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var id, order;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        id = req.body.id;
+                        return [4 /*yield*/, order_model_1.default.findById(id)];
+                    case 1:
+                        order = _a.sent();
+                        if (!order) {
+                            throw error_1.ErrorHelper.forbidden("không tồn tại order này");
+                        }
+                        order.status = model_const_1.OrderStatusEnum.FAILED;
+                        order.save();
+                        res.status(200).json({
+                            status: 200,
+                            code: "200",
+                            message: "succes",
+                            data: {
+                                order: order,
+                            },
+                        });
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    OrderRoute.prototype.deleteOneOrder = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var id, order;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        id = req.body.id;
+                        return [4 /*yield*/, order_model_1.default.findById(id)];
+                    case 1:
+                        order = _a.sent();
+                        if (!order) {
+                            throw error_1.ErrorHelper.forbidden("không tồn tại order này");
+                        }
+                        return [4 /*yield*/, order_model_1.default.deleteOne({ _id: id })];
+                    case 2:
+                        _a.sent();
+                        res.status(200).json({
+                            status: 200,
+                            code: "200",
+                            message: "succes",
+                            data: {
+                                order: order,
+                            },
+                        });
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    OrderRoute.prototype.updateOrderStatusForAdmin = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _a, orderId, status, order;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _a = req.body, orderId = _a.orderId, status = _a.status;
+                        if (!orderId || !status) {
+                            throw error_1.ErrorHelper.requestDataInvalid("request data");
+                        }
+                        return [4 /*yield*/, order_model_1.default.findById(orderId)];
+                    case 1:
+                        order = _b.sent();
+                        if (!order) {
+                            throw error_1.ErrorHelper.forbidden("Không tìm thấy order");
+                        }
+                        if (![
+                            model_const_1.OrderStatusEnum.FAILED,
+                            model_const_1.OrderStatusEnum.PENDING,
+                            model_const_1.OrderStatusEnum.SUCCESS,
+                        ].includes(status)) {
+                            throw error_1.ErrorHelper.forbidden("không đúng trạng thái của order");
+                        }
+                        order.status = status;
+                        order.save();
                         res.status(200).json({
                             status: 200,
                             code: "200",

@@ -20,6 +20,7 @@ class UserRoute extends BaseRoute {
     this.router.post("/register", this.route(this.register));
     this.router.post("/login", this.route(this.login));
     this.router.get("/getAllUser", this.route(this.getAllUser));
+    this.router.get("/getMe", [this.authentication], this.route(this.getMe));
     this.router.get("/getOneUser", this.route(this.getOneUser));
     this.router.get(
       "/findOne",
@@ -31,12 +32,12 @@ class UserRoute extends BaseRoute {
       [this.authentication],
       this.route(this.createUser)
     );
-        this.router.post(
+    this.router.post(
       "/deleteUser",
       [this.authentication],
       this.route(this.deleteUser)
     );
-         this.router.post(
+    this.router.post(
       "/updateUser",
       [this.authentication],
       this.route(this.updateUser)
@@ -95,6 +96,19 @@ class UserRoute extends BaseRoute {
       data: {
         user,
       },
+    });
+  }
+
+  async getMe(req: Request, res: Response) {
+    const user: any = await UserModel.findById(req.tokenInfo._id);
+    if (!user) {
+      throw ErrorHelper.userNotExist();
+    }
+    res.status(200).json({
+      status: 200,
+      code: "200",
+      message: "succes",
+      data: { user },
     });
   }
 
@@ -213,49 +227,49 @@ class UserRoute extends BaseRoute {
     });
   }
 
-  async deleteUser(req:Request,res:Response){
-    if(ROLES.ADMIN!= req.tokenInfo.role_){
+  async deleteUser(req: Request, res: Response) {
+    if (ROLES.ADMIN != req.tokenInfo.role_) {
       throw ErrorHelper.permissionDeny();
     }
 
-    let {id}  =req.body;
+    let { id } = req.body;
 
     let user = await UserModel.findById(id);
-    if(!user){
+    if (!user) {
       throw ErrorHelper.userNotExist();
     }
 
-    await UserModel.deleteOne({_id:id});
+    await UserModel.deleteOne({ _id: id });
     return res.status(200).json({
-      status:200,
-      code:"200",
-      message:"succes",
-      data:{
-        user
-      }
-    })
+      status: 200,
+      code: "200",
+      message: "succes",
+      data: {
+        user,
+      },
+    });
   }
 
-  async updateUser(req:Request,res:Response){
-    let {id, name, phone, password, email} = req.body;
+  async updateUser(req: Request, res: Response) {
+    let { id, name, phone, password, email } = req.body;
     let user = await UserModel.findById(id);
-    if(!user){
+    if (!user) {
       throw ErrorHelper.userNotExist();
     }
-    user.name = name||user.name;
-    user.phone = phone||user.phone;
-    user.email = email||user.email;
-    user.password = password||user.password;
+    user.name = name || user.name;
+    user.phone = phone || user.phone;
+    user.email = email || user.email;
+    user.password = password || user.password;
 
     await user.save();
     return res.status(200).json({
-      status:200,
-      code:"200",
-      message:"succes",
-      data:{
-        user
-      }
-    })
+      status: 200,
+      code: "200",
+      message: "succes",
+      data: {
+        user,
+      },
+    });
   }
 }
 

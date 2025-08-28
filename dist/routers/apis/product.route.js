@@ -64,11 +64,12 @@ var ProductRoute = /** @class */ (function (_super) {
     }
     ProductRoute.prototype.customRouting = function () {
         this.router.get("/getAllProduct", this.route(this.getAllProduct));
-        this.router.get("/getOneProduct", this.route(this.getOneProduct));
+        this.router.get("/getOneProduct/:idProduct", this.route(this.getOneProduct));
         this.router.get("/findOne", [this.authentication], this.route(this.findOne));
         this.router.post("/createProduct", [this.authentication], this.route(this.createProduct));
         this.router.post("/deleteProduct", [this.authentication], this.route(this.deleteProduct));
         this.router.post("/updateProduct", [this.authentication], this.route(this.updateProduct));
+        this.router.get("/getOneProductForSlug", [this.authentication], this.route(this.getOneProductForSlug));
     };
     ProductRoute.prototype.authentication = function (req, res, next) {
         return __awaiter(this, void 0, void 0, function () {
@@ -131,7 +132,7 @@ var ProductRoute = /** @class */ (function (_super) {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        id = req.body.id;
+                        id = req.params.id;
                         if (!id) {
                             throw error_1.ErrorHelper.requestDataInvalid("request data");
                         }
@@ -268,6 +269,35 @@ var ProductRoute = /** @class */ (function (_super) {
                         product.image = image || product.image;
                         product.describe = describe || product.describe;
                         product.save();
+                        res.status(200).json({
+                            status: 200,
+                            code: "200",
+                            message: "succes",
+                            data: {
+                                product: product,
+                            },
+                        });
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    ProductRoute.prototype.getOneProductForSlug = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var slug, product;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        slug = req.body.slug;
+                        if (!slug) {
+                            throw error_1.ErrorHelper.requestDataInvalid("request data");
+                        }
+                        return [4 /*yield*/, product_model_1.ProductModel.findOne({ slug: slug })];
+                    case 1:
+                        product = _a.sent();
+                        if (!product) {
+                            throw error_1.ErrorHelper.forbidden("Không tồn tại sản phẩm");
+                        }
                         res.status(200).json({
                             status: 200,
                             code: "200",
