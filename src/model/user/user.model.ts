@@ -8,6 +8,7 @@ export type IUser = BaseDocument & {
   email?: string;
   password?: string;
   walletId?: string;
+  usedCouponIds?: string[];
   role?: string;
   key?: string;
 };
@@ -19,6 +20,7 @@ const UserSchema = new mongoose.Schema(
     email: { type: String },
     password: { type: String },
     walletId: { type: Schema.Types.ObjectId, ref: "Wallet" },
+    usedCouponIds: [{ type: Schema.Types.ObjectId, ref: "Coupon" }],
     role: { type: String },
     key: { type: String },
   },

@@ -64,6 +64,7 @@ var product_model_1 = require("../../model/product/product.model");
 var wallet_model_1 = __importDefault(require("../../model/wallet/wallet.model"));
 var order_model_1 = __importDefault(require("../../model/order/order.model"));
 var model_const_1 = require("../../constants/model.const");
+var coupon_model_1 = require("../../model/coupon/coupon.model");
 var OrderRoute = /** @class */ (function (_super) {
     __extends(OrderRoute, _super);
     function OrderRoute() {
@@ -110,20 +111,20 @@ var OrderRoute = /** @class */ (function (_super) {
     };
     OrderRoute.prototype.createOrder = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, cartIds, paymentMethod, carts, totalPrice, user, wallet, order;
+            var _a, cartIds, paymentMethod, _b, couponIds, carts, totalPrice, user, discount, coupons, wallet, order;
             var _this = this;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        _a = req.body, cartIds = _a.cartIds, paymentMethod = _a.paymentMethod;
-                        if (cartIds.length == 0 || !paymentMethod) {
+                        _a = req.body, cartIds = _a.cartIds, paymentMethod = _a.paymentMethod, _b = _a.couponIds, couponIds = _b === void 0 ? [] : _b;
+                        if (!cartIds || cartIds.length === 0 || !paymentMethod) {
                             throw error_1.ErrorHelper.requestDataInvalid("request data");
                         }
                         return [4 /*yield*/, cart_model_1.CartModel.find({ _id: { $in: cartIds } })];
                     case 1:
-                        carts = _b.sent();
-                        if (!carts) {
-                            throw error_1.ErrorHelper.forbidden("Not cart");
+                        carts = _c.sent();
+                        if (!carts || carts.length === 0) {
+                            throw error_1.ErrorHelper.forbidden("Không tìm thấy giỏ hàng");
                         }
                         totalPrice = 0;
                         return [4 /*yield*/, Promise.all(carts.map(function (cart) { return __awaiter(_this, void 0, void 0, function () {
@@ -133,55 +134,80 @@ var OrderRoute = /** @class */ (function (_super) {
                                         case 0: return [4 /*yield*/, product_model_1.ProductModel.findById(cart.productId)];
                                         case 1:
                                             product = _a.sent();
+                                            if (!product)
+                                                throw error_1.ErrorHelper.forbidden("Sản phẩm không tồn tại");
                                             totalPrice += cart.quantity * product.price;
                                             return [2 /*return*/];
                                     }
                                 });
                             }); }))];
                     case 2:
-                        _b.sent();
+                        _c.sent();
                         return [4 /*yield*/, user_model_1.UserModel.findById(req.tokenInfo._id)];
                     case 3:
-                        user = _b.sent();
-                        if (!(paymentMethod == "WALLET")) return [3 /*break*/, 6];
-                        return [4 /*yield*/, wallet_model_1.default.findById(user.walletId)];
+                        user = _c.sent();
+                        if (!user)
+                            throw error_1.ErrorHelper.userNotExist();
+                        discount = 0;
+                        if (!(couponIds.length > 0)) return [3 /*break*/, 6];
+                        return [4 /*yield*/, coupon_model_1.CouponModel.find({ _id: { $in: couponIds } })];
                     case 4:
-                        wallet = _b.sent();
-                        if (wallet.balance < totalPrice) {
-                            throw error_1.ErrorHelper.forbidden("bạn không đủ số dư để thanh toán");
-                        }
-                        return [4 /*yield*/, wallet_model_1.default.updateOne({ _id: wallet.id }, {
-                                $inc: {
-                                    balance: -totalPrice,
-                                },
-                            })];
+                        coupons = _c.sent();
+                        coupons.forEach(function (coupon) {
+                            var _a;
+                            // bỏ qua coupon đã dùng
+                            var alreadyUsed = (_a = user.usedCouponIds) === null || _a === void 0 ? void 0 : _a.some(function (id) { return id.toString() === coupon._id.toString(); });
+                            if (alreadyUsed)
+                                return;
+                            // kiểm tra điều kiện priceCondition
+                            if (totalPrice >= (coupon.priceCondition || 0)) {
+                                discount += coupon.price || 0;
+                            }
+                        });
+                        if (discount > totalPrice)
+                            discount = totalPrice;
+                        totalPrice -= discount;
+                        // Lưu coupon đã dùng vào user
+                        return [4 /*yield*/, user_model_1.UserModel.updateOne({ _id: user._id }, { $addToSet: { usedCouponIds: { $each: couponIds } } })];
                     case 5:
-                        _b.sent();
-                        _b.label = 6;
+                        // Lưu coupon đã dùng vào user
+                        _c.sent();
+                        _c.label = 6;
                     case 6:
+                        if (!(paymentMethod === "WALLET")) return [3 /*break*/, 9];
+                        return [4 /*yield*/, wallet_model_1.default.findById(user.walletId)];
+                    case 7:
+                        wallet = _c.sent();
+                        if (!wallet || wallet.balance < totalPrice) {
+                            throw error_1.ErrorHelper.forbidden("Bạn không đủ số dư để thanh toán");
+                        }
+                        return [4 /*yield*/, wallet_model_1.default.updateOne({ _id: wallet.id }, { $inc: { balance: -totalPrice } })];
+                    case 8:
+                        _c.sent();
+                        _c.label = 9;
+                    case 9:
                         order = new order_model_1.default({
                             userId: req.tokenInfo._id,
                             cartIds: cartIds,
                             paymentMethod: paymentMethod,
                             status: model_const_1.OrderStatusEnum.PENDING,
                             totalPrice: totalPrice,
-                            paid: paymentMethod == "CASH" ? false : true,
+                            paid: paymentMethod === "CASH" ? false : true,
+                            couponIds: couponIds,
                         });
                         return [4 /*yield*/, order.save()];
-                    case 7:
-                        _b.sent();
-                        return [4 /*yield*/, cart_model_1.CartModel.updateMany({ _id: { $in: cartIds } }, {
-                                $set: { status: model_const_1.CartStatusEnum.SUCCES },
-                            })];
-                    case 8:
-                        _b.sent();
+                    case 10:
+                        _c.sent();
+                        // 6. Update cart status
+                        return [4 /*yield*/, cart_model_1.CartModel.updateMany({ _id: { $in: cartIds } }, { $set: { status: model_const_1.CartStatusEnum.SUCCES } })];
+                    case 11:
+                        // 6. Update cart status
+                        _c.sent();
                         res.status(200).json({
                             status: 200,
                             code: "200",
-                            message: "succes",
-                            data: {
-                                order: order,
-                            },
+                            message: "success",
+                            data: { order: order, discount: discount },
                         });
                         return [2 /*return*/];
                 }

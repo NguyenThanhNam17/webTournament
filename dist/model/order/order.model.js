@@ -44,6 +44,7 @@ exports.OrderSchema = new mongoose_1.default.Schema({
     status: { type: String, enum: Object.values(model_const_1.OrderStatusEnum) },
     totalPrice: { type: Number, default: 0 },
     paid: { type: Boolean },
+    couponIds: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Coupon" }],
 });
 var OrderModel = mongoose_1.default.model("Order", exports.OrderSchema);
 exports.default = OrderModel;

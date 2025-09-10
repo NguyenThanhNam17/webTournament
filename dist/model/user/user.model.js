@@ -41,6 +41,7 @@ var UserSchema = new mongoose_1.default.Schema({
     email: { type: String },
     password: { type: String },
     walletId: { type: mongoose_1.Schema.Types.ObjectId, ref: "Wallet" },
+    usedCouponIds: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Coupon" }],
     role: { type: String },
     key: { type: String },
 }, {

@@ -9,11 +9,13 @@ var product_route_1 = __importDefault(require("./product.route"));
 var cart_route_1 = __importDefault(require("./cart.route"));
 var wallet_route_1 = __importDefault(require("./wallet.route"));
 var order_route_1 = __importDefault(require("./order.route"));
+var coupon_route_1 = __importDefault(require("./coupon.route"));
 var router = express_1.default.Router();
 router.use("/user", user_route_1.default);
 router.use("/product", product_route_1.default);
 router.use("/cart", cart_route_1.default);
 router.use("/wallet", wallet_route_1.default);
 router.use("/order", order_route_1.default);
+router.use("/coupon", coupon_route_1.default);
 exports.default = router;
 //# sourceMappingURL=index.js.map

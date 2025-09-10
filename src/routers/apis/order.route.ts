@@ -13,6 +13,7 @@ import { ProductModel } from "../../model/product/product.model";
 import WalletModel from "../../model/wallet/wallet.model";
 import OrderModel from "../../model/order/order.model";
 import { CartStatusEnum, OrderStatusEnum } from "../../constants/model.const";
+import { CouponModel } from "../../model/coupon/coupon.model";
 
 class OrderRoute extends BaseRoute {
   constructor() {
@@ -73,64 +74,94 @@ class OrderRoute extends BaseRoute {
   }
 
   async createOrder(req: Request, res: Response) {
-    let { cartIds, paymentMethod } = req.body;
-    if (cartIds.length == 0 || !paymentMethod) {
+    let { cartIds, paymentMethod, couponIds = [] } = req.body;
+
+    if (!cartIds || cartIds.length === 0 || !paymentMethod) {
       throw ErrorHelper.requestDataInvalid("request data");
     }
 
-    var carts = await CartModel.find({ _id: { $in: cartIds } });
-    if (!carts) {
-      throw ErrorHelper.forbidden("Not cart");
+    // 1. Tính tổng giá giỏ hàng
+    const carts = await CartModel.find({ _id: { $in: cartIds } });
+    if (!carts || carts.length === 0) {
+      throw ErrorHelper.forbidden("Không tìm thấy giỏ hàng");
     }
 
     let totalPrice = 0;
     await Promise.all(
       carts.map(async (cart: any) => {
         const product = await ProductModel.findById(cart.productId);
+        if (!product) throw ErrorHelper.forbidden("Sản phẩm không tồn tại");
         totalPrice += cart.quantity * product.price;
       })
     );
 
+    // 2. Lấy user
     let user = await UserModel.findById(req.tokenInfo._id);
+    if (!user) throw ErrorHelper.userNotExist();
 
-    if (paymentMethod == "WALLET") {
-      let wallet = await WalletModel.findById(user.walletId);
-      if (wallet.balance < totalPrice) {
-        throw ErrorHelper.forbidden("bạn không đủ số dư để thanh toán");
-      }
-      await WalletModel.updateOne(
-        { _id: wallet.id },
-        {
-          $inc: {
-            balance: -totalPrice,
-          },
+    // 3. Áp dụng coupon
+    let discount = 0;
+    if (couponIds.length > 0) {
+      const coupons = await CouponModel.find({ _id: { $in: couponIds } });
+
+      coupons.forEach((coupon) => {
+        // bỏ qua coupon đã dùng
+        const alreadyUsed = user.usedCouponIds?.some(
+          (id) => id.toString() === coupon._id.toString()
+        );
+        if (alreadyUsed) return;
+
+        // kiểm tra điều kiện priceCondition
+        if (totalPrice >= (coupon.priceCondition || 0)) {
+          discount += coupon.price || 0;
         }
+      });
+
+      if (discount > totalPrice) discount = totalPrice;
+      totalPrice -= discount;
+
+      // Lưu coupon đã dùng vào user
+      await UserModel.updateOne(
+        { _id: user._id },
+        { $addToSet: { usedCouponIds: { $each: couponIds } } }
       );
     }
 
+    // 4. Thanh toán bằng ví (nếu chọn WALLET)
+    if (paymentMethod === "WALLET") {
+      let wallet = await WalletModel.findById(user.walletId);
+      if (!wallet || wallet.balance < totalPrice) {
+        throw ErrorHelper.forbidden("Bạn không đủ số dư để thanh toán");
+      }
+      await WalletModel.updateOne(
+        { _id: wallet.id },
+        { $inc: { balance: -totalPrice } }
+      );
+    }
+
+    // 5. Tạo Order
     let order = new OrderModel({
       userId: req.tokenInfo._id,
       cartIds: cartIds,
       paymentMethod: paymentMethod,
       status: OrderStatusEnum.PENDING,
       totalPrice: totalPrice,
-      paid: paymentMethod == "CASH" ? false : true,
+      paid: paymentMethod === "CASH" ? false : true,
+      couponIds: couponIds,
     });
     await order.save();
 
+    // 6. Update cart status
     await CartModel.updateMany(
       { _id: { $in: cartIds } },
-      {
-        $set: { status: CartStatusEnum.SUCCES },
-      }
+      { $set: { status: CartStatusEnum.SUCCES } }
     );
+
     res.status(200).json({
       status: 200,
       code: "200",
-      message: "succes",
-      data: {
-        order,
-      },
+      message: "success",
+      data: { order, discount },
     });
   }
 
