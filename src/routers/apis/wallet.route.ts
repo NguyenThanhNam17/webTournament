@@ -53,19 +53,19 @@ class WalletRoute extends BaseRoute {
       throw ErrorHelper.permissionDeny();
     }
 
-    let Wallet = await WalletModel.findById(id);
-    if (!Wallet) {
+    let wallet = await WalletModel.findById(id);
+    if (!wallet) {
       throw ErrorHelper.userNotExist();
     }
-    Wallet.balance = updateBalance;
-    await Wallet.save();
+    wallet.balance = updateBalance;
+    await wallet.save();
     res.status(200).json({
       status: 200,
       code: "200",
       message: "succes",
-      data: { Wallet },
+      data: { wallet },
     });
   }
 }
 
-export default new WalletRoute().route;
+export default new WalletRoute().router;

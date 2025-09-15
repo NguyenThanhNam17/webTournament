@@ -294,5 +294,5 @@ var CartRoute = /** @class */ (function (_super) {
     };
     return CartRoute;
 }(baseRouter_1.BaseRoute));
-exports.default = new CartRoute().route;
+exports.default = new CartRoute().router;
 //# sourceMappingURL=cart.route.js.map

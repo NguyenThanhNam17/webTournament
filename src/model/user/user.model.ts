@@ -1,5 +1,6 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, Types } from "mongoose";
 import { BaseDocument } from "../../base/baseModel";
+import { Type } from "typescript/lib/typescript";
 
 //định nghĩa các type cho user
 export type IUser = BaseDocument & {
@@ -7,8 +8,8 @@ export type IUser = BaseDocument & {
   phone?: string;
   email?: string;
   password?: string;
-  walletId?: string;
-  usedCouponIds?: string[];
+  walletId?: Types.ObjectId;
+  usedCouponIds?: Types.ObjectId[];
   role?: string;
   key?: string;
 };
@@ -20,7 +21,9 @@ const UserSchema = new mongoose.Schema(
     email: { type: String },
     password: { type: String },
     walletId: { type: Schema.Types.ObjectId, ref: "Wallet" },
-    usedCouponIds: [{ type: Schema.Types.ObjectId, ref: "Coupon" }],
+    usedCouponIds: [
+      { type: Schema.Types.ObjectId, ref: "Coupon", default: [] },
+    ],
     role: { type: String },
     key: { type: String },
   },

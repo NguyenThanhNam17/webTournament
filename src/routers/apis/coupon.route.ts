@@ -58,7 +58,7 @@ class CouponRoute extends BaseRoute {
     });
 
     res.status(200).json({
-      status: 200,
+      status: 200, 
       code: "200",
       message: "succes",
       data: { coupons },
@@ -69,6 +69,11 @@ class CouponRoute extends BaseRoute {
     let { code, title, content, image, price, priceCondition } = req.body;
     if (!code || !title || !content || !image || !price || !priceCondition) {
       throw ErrorHelper.requestDataInvalid("request data");
+    }
+    
+    let checkCode = await CouponModel.findOne({code:code});
+    if(checkCode){
+      throw ErrorHelper.forbidden("đã tồn tại code giảm giá này")
     }
 
     let coupon = new CouponModel({
@@ -81,7 +86,7 @@ class CouponRoute extends BaseRoute {
     });
 
     await coupon.save();
-    res.status(200).json({
+     res.status(200).json({
       status: 200,
       code: "200",
       message: "succes",
@@ -92,4 +97,4 @@ class CouponRoute extends BaseRoute {
   }
 }
 
-export default new CouponRoute().route;
+export default new CouponRoute().router;

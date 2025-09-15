@@ -111,22 +111,21 @@ var OrderRoute = /** @class */ (function (_super) {
     };
     OrderRoute.prototype.createOrder = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, cartIds, paymentMethod, _b, couponIds, carts, totalPrice, user, discount, coupons, wallet, order;
+            var _a, _b, cartIds, paymentMethod, _c, couponIds, carts, productPrices, totalPrice, user, discount, validCouponIds, coupons, newBalance, wallet, order;
             var _this = this;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            return __generator(this, function (_d) {
+                switch (_d.label) {
                     case 0:
-                        _a = req.body, cartIds = _a.cartIds, paymentMethod = _a.paymentMethod, _b = _a.couponIds, couponIds = _b === void 0 ? [] : _b;
+                        _a = req.body, _b = _a.cartIds, cartIds = _b === void 0 ? [] : _b, paymentMethod = _a.paymentMethod, _c = _a.couponIds, couponIds = _c === void 0 ? [] : _c;
                         if (!cartIds || cartIds.length === 0 || !paymentMethod) {
                             throw error_1.ErrorHelper.requestDataInvalid("request data");
                         }
                         return [4 /*yield*/, cart_model_1.CartModel.find({ _id: { $in: cartIds } })];
                     case 1:
-                        carts = _c.sent();
+                        carts = _d.sent();
                         if (!carts || carts.length === 0) {
                             throw error_1.ErrorHelper.forbidden("Không tìm thấy giỏ hàng");
                         }
-                        totalPrice = 0;
                         return [4 /*yield*/, Promise.all(carts.map(function (cart) { return __awaiter(_this, void 0, void 0, function () {
                                 var product;
                                 return __generator(this, function (_a) {
@@ -136,55 +135,56 @@ var OrderRoute = /** @class */ (function (_super) {
                                             product = _a.sent();
                                             if (!product)
                                                 throw error_1.ErrorHelper.forbidden("Sản phẩm không tồn tại");
-                                            totalPrice += cart.quantity * product.price;
-                                            return [2 /*return*/];
+                                            return [2 /*return*/, cart.quantity * product.price];
                                     }
                                 });
                             }); }))];
                     case 2:
-                        _c.sent();
+                        productPrices = _d.sent();
+                        totalPrice = productPrices.reduce(function (a, b) { return a + b; }, 0);
                         return [4 /*yield*/, user_model_1.UserModel.findById(req.tokenInfo._id)];
                     case 3:
-                        user = _c.sent();
+                        user = _d.sent();
                         if (!user)
                             throw error_1.ErrorHelper.userNotExist();
                         discount = 0;
+                        validCouponIds = [];
                         if (!(couponIds.length > 0)) return [3 /*break*/, 6];
                         return [4 /*yield*/, coupon_model_1.CouponModel.find({ _id: { $in: couponIds } })];
                     case 4:
-                        coupons = _c.sent();
+                        coupons = _d.sent();
                         coupons.forEach(function (coupon) {
                             var _a;
-                            // bỏ qua coupon đã dùng
                             var alreadyUsed = (_a = user.usedCouponIds) === null || _a === void 0 ? void 0 : _a.some(function (id) { return id.toString() === coupon._id.toString(); });
                             if (alreadyUsed)
                                 return;
-                            // kiểm tra điều kiện priceCondition
                             if (totalPrice >= (coupon.priceCondition || 0)) {
                                 discount += coupon.price || 0;
+                                validCouponIds.push(coupon._id);
                             }
                         });
                         if (discount > totalPrice)
                             discount = totalPrice;
                         totalPrice -= discount;
-                        // Lưu coupon đã dùng vào user
-                        return [4 /*yield*/, user_model_1.UserModel.updateOne({ _id: user._id }, { $addToSet: { usedCouponIds: { $each: couponIds } } })];
+                        if (!(validCouponIds.length > 0)) return [3 /*break*/, 6];
+                        return [4 /*yield*/, user_model_1.UserModel.updateOne({ _id: user._id }, { $addToSet: { usedCouponIds: { $each: validCouponIds } } })];
                     case 5:
-                        // Lưu coupon đã dùng vào user
-                        _c.sent();
-                        _c.label = 6;
+                        _d.sent();
+                        _d.label = 6;
                     case 6:
                         if (!(paymentMethod === "WALLET")) return [3 /*break*/, 9];
                         return [4 /*yield*/, wallet_model_1.default.findById(user.walletId)];
                     case 7:
-                        wallet = _c.sent();
+                        wallet = _d.sent();
                         if (!wallet || wallet.balance < totalPrice) {
                             throw error_1.ErrorHelper.forbidden("Bạn không đủ số dư để thanh toán");
                         }
-                        return [4 /*yield*/, wallet_model_1.default.updateOne({ _id: wallet.id }, { $inc: { balance: -totalPrice } })];
+                        wallet.balance -= totalPrice;
+                        return [4 /*yield*/, wallet.save()];
                     case 8:
-                        _c.sent();
-                        _c.label = 9;
+                        _d.sent();
+                        newBalance = wallet.balance;
+                        _d.label = 9;
                     case 9:
                         order = new order_model_1.default({
                             userId: req.tokenInfo._id,
@@ -192,22 +192,20 @@ var OrderRoute = /** @class */ (function (_super) {
                             paymentMethod: paymentMethod,
                             status: model_const_1.OrderStatusEnum.PENDING,
                             totalPrice: totalPrice,
-                            paid: paymentMethod === "CASH" ? false : true,
-                            couponIds: couponIds,
+                            paid: paymentMethod === "WALLET",
+                            couponIds: validCouponIds,
                         });
                         return [4 /*yield*/, order.save()];
                     case 10:
-                        _c.sent();
-                        // 6. Update cart status
-                        return [4 /*yield*/, cart_model_1.CartModel.updateMany({ _id: { $in: cartIds } }, { $set: { status: model_const_1.CartStatusEnum.SUCCES } })];
+                        _d.sent();
+                        return [4 /*yield*/, cart_model_1.CartModel.updateMany({ _id: { $in: cartIds } }, { $set: { status: model_const_1.CartStatusEnum.SUCCESS } })];
                     case 11:
-                        // 6. Update cart status
-                        _c.sent();
+                        _d.sent();
                         res.status(200).json({
                             status: 200,
                             code: "200",
                             message: "success",
-                            data: { order: order, discount: discount },
+                            data: { order: order, discount: discount, newBalance: newBalance },
                         });
                         return [2 /*return*/];
                 }
@@ -362,5 +360,5 @@ var OrderRoute = /** @class */ (function (_super) {
     };
     return OrderRoute;
 }(baseRouter_1.BaseRoute));
-exports.default = new OrderRoute().route;
+exports.default = new OrderRoute().router;
 //# sourceMappingURL=order.route.js.map

@@ -124,13 +124,19 @@ var CouponRoute = /** @class */ (function (_super) {
     };
     CouponRoute.prototype.createCoupon = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, code, title, content, image, price, priceCondition, coupon;
+            var _a, code, title, content, image, price, priceCondition, checkCode, coupon;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         _a = req.body, code = _a.code, title = _a.title, content = _a.content, image = _a.image, price = _a.price, priceCondition = _a.priceCondition;
                         if (!code || !title || !content || !image || !price || !priceCondition) {
                             throw error_1.ErrorHelper.requestDataInvalid("request data");
+                        }
+                        return [4 /*yield*/, coupon_model_1.CouponModel.findOne({ code: code })];
+                    case 1:
+                        checkCode = _b.sent();
+                        if (checkCode) {
+                            throw error_1.ErrorHelper.forbidden("đã tồn tại code giảm giá này");
                         }
                         coupon = new coupon_model_1.CouponModel({
                             code: code,
@@ -141,7 +147,7 @@ var CouponRoute = /** @class */ (function (_super) {
                             priceCondition: priceCondition,
                         });
                         return [4 /*yield*/, coupon.save()];
-                    case 1:
+                    case 2:
                         _b.sent();
                         res.status(200).json({
                             status: 200,
@@ -158,5 +164,5 @@ var CouponRoute = /** @class */ (function (_super) {
     };
     return CouponRoute;
 }(baseRouter_1.BaseRoute));
-exports.default = new CouponRoute().route;
+exports.default = new CouponRoute().router;
 //# sourceMappingURL=coupon.route.js.map

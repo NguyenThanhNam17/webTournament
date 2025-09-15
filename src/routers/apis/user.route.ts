@@ -10,6 +10,7 @@ import { TokenHelper } from "../../helper/token.helper";
 import passwordHash from "password-hash";
 import { ROLES } from "../../constants/role.const";
 import { UserHelper } from "../../model/user/user.helper";
+import WalletModel from "../../model/wallet/wallet.model";
 
 class UserRoute extends BaseRoute {
   constructor() {
@@ -66,36 +67,46 @@ class UserRoute extends BaseRoute {
   }
 
   async register(req: Request, res: Response) {
-    let { username, phone, email, password } = req.body;
+    const { username, phone, email, password } = req.body;
     if (!username || !phone || !email || !password) {
       throw ErrorHelper.requestDataInvalid("data invalid");
     }
 
-    let user = await UserModel.findOne({ phone: phone });
-    if (user) {
+    // kiểm tra user đã tồn tại
+    let existing = await UserModel.findOne({ phone });
+    if (existing) {
       throw ErrorHelper.userExisted();
     }
 
     const key = TokenHelper.generateKey();
 
-    user = new UserModel({
+    // tạo user (chưa có walletId)
+    let user = new UserModel({
       name: username,
-      phone: phone,
-      email: email,
+      phone,
+      email,
       password: passwordHash.generate(password),
       role: ROLES.CLIENT,
-      key: key,
+      key,
     });
-
     await user.save();
 
+    // tạo wallet
+    const wallet = await WalletModel.create({
+      userId: user._id,
+      balance: 0,
+    });
+
+    // gán walletId cho user
+    user.walletId = wallet._id as any; // ép kiểu để tránh TS complain
+    await user.save();
+
+    // response
     res.status(200).json({
       status: 200,
       code: "200",
-      message: "succes",
-      data: {
-        user,
-      },
+      message: "success",
+      data: { user },
     });
   }
 
@@ -213,7 +224,7 @@ class UserRoute extends BaseRoute {
       email: email,
       password: passwordHash.generate(password),
       key: key,
-      role: ROLES.CLIENT,
+      role: ROLES.ADMIN,
     });
 
     await user.save();

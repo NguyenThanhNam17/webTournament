@@ -61,6 +61,7 @@ var token_helper_1 = require("../../helper/token.helper");
 var password_hash_1 = __importDefault(require("password-hash"));
 var role_const_1 = require("../../constants/role.const");
 var user_helper_1 = require("../../model/user/user.helper");
+var wallet_model_1 = __importDefault(require("../../model/wallet/wallet.model"));
 var UserRoute = /** @class */ (function (_super) {
     __extends(UserRoute, _super);
     function UserRoute() {
@@ -110,7 +111,7 @@ var UserRoute = /** @class */ (function (_super) {
     };
     UserRoute.prototype.register = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, username, phone, email, password, user, key;
+            var _a, username, phone, email, password, existing, key, user, wallet;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -120,8 +121,8 @@ var UserRoute = /** @class */ (function (_super) {
                         }
                         return [4 /*yield*/, user_model_1.UserModel.findOne({ phone: phone })];
                     case 1:
-                        user = _b.sent();
-                        if (user) {
+                        existing = _b.sent();
+                        if (existing) {
                             throw error_1.ErrorHelper.userExisted();
                         }
                         key = token_helper_1.TokenHelper.generateKey();
@@ -136,13 +137,23 @@ var UserRoute = /** @class */ (function (_super) {
                         return [4 /*yield*/, user.save()];
                     case 2:
                         _b.sent();
+                        return [4 /*yield*/, wallet_model_1.default.create({
+                                userId: user._id,
+                                balance: 0,
+                            })];
+                    case 3:
+                        wallet = _b.sent();
+                        // gán walletId cho user
+                        user.walletId = wallet._id; // ép kiểu để tránh TS complain
+                        return [4 /*yield*/, user.save()];
+                    case 4:
+                        _b.sent();
+                        // response
                         res.status(200).json({
                             status: 200,
                             code: "200",
-                            message: "succes",
-                            data: {
-                                user: user,
-                            },
+                            message: "success",
+                            data: { user: user },
                         });
                         return [2 /*return*/];
                 }
@@ -306,7 +317,7 @@ var UserRoute = /** @class */ (function (_super) {
                             email: email,
                             password: password_hash_1.default.generate(password),
                             key: key,
-                            role: role_const_1.ROLES.CLIENT,
+                            role: role_const_1.ROLES.ADMIN,
                         });
                         return [4 /*yield*/, user.save()];
                     case 1:

@@ -4,7 +4,7 @@ exports.OrderStatusEnum = exports.CartStatusEnum = void 0;
 var CartStatusEnum;
 (function (CartStatusEnum) {
     CartStatusEnum["PENDING"] = "PENDING";
-    CartStatusEnum["SUCCES"] = "SUCCES";
+    CartStatusEnum["SUCCESS"] = "SUCCESS";
 })(CartStatusEnum || (exports.CartStatusEnum = CartStatusEnum = {}));
 var OrderStatusEnum;
 (function (OrderStatusEnum) {

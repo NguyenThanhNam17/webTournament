@@ -1,6 +1,6 @@
 export enum CartStatusEnum {
     PENDING = "PENDING",
-    SUCCES = "SUCCES"
+    SUCCESS = "SUCCESS"
 }
 
 export enum OrderStatusEnum {

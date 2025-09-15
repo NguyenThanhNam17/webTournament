@@ -101,7 +101,7 @@ var WalletRoute = /** @class */ (function (_super) {
     };
     WalletRoute.prototype.updateBalanceForAdmin = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, id, updateBalance, Wallet;
+            var _a, id, updateBalance, wallet;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -114,19 +114,19 @@ var WalletRoute = /** @class */ (function (_super) {
                         }
                         return [4 /*yield*/, wallet_model_1.default.findById(id)];
                     case 1:
-                        Wallet = _b.sent();
-                        if (!Wallet) {
+                        wallet = _b.sent();
+                        if (!wallet) {
                             throw error_1.ErrorHelper.userNotExist();
                         }
-                        Wallet.balance = updateBalance;
-                        return [4 /*yield*/, Wallet.save()];
+                        wallet.balance = updateBalance;
+                        return [4 /*yield*/, wallet.save()];
                     case 2:
                         _b.sent();
                         res.status(200).json({
                             status: 200,
                             code: "200",
                             message: "succes",
-                            data: { Wallet: Wallet },
+                            data: { wallet: wallet },
                         });
                         return [2 /*return*/];
                 }
@@ -135,5 +135,5 @@ var WalletRoute = /** @class */ (function (_super) {
     };
     return WalletRoute;
 }(baseRouter_1.BaseRoute));
-exports.default = new WalletRoute().route;
+exports.default = new WalletRoute().router;
 //# sourceMappingURL=wallet.route.js.map

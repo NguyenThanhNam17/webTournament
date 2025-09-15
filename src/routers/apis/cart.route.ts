@@ -198,4 +198,4 @@ class CartRoute extends BaseRoute {
   }
 }
 
-export default new CartRoute().route;
+export default new CartRoute().router;
