@@ -3,6 +3,7 @@ import { BaseDocument } from "../../base/baseModel";
 import { OrderStatusEnum } from "../../constants/model.const";
 
 export type IOrder = BaseDocument & {
+  code?:string;
   userId?: string;
   cartIds?: string[];
   price?: number;
@@ -14,6 +15,7 @@ export type IOrder = BaseDocument & {
 };
 
 export const OrderSchema = new mongoose.Schema({
+  code:{type:String},
   userId: { type: Schema.Types.ObjectId, ref: "User" },
   cartIds: [{ type: String }],
   price: { type: Number },

@@ -65,6 +65,8 @@ var wallet_model_1 = __importDefault(require("../../model/wallet/wallet.model"))
 var order_model_1 = __importDefault(require("../../model/order/order.model"));
 var model_const_1 = require("../../constants/model.const");
 var coupon_model_1 = require("../../model/coupon/coupon.model");
+var mailer_1 = require("../../helper/mailer");
+var order_helper_1 = require("../../model/order/order.helper");
 var OrderRoute = /** @class */ (function (_super) {
     __extends(OrderRoute, _super);
     function OrderRoute() {
@@ -111,7 +113,7 @@ var OrderRoute = /** @class */ (function (_super) {
     };
     OrderRoute.prototype.createOrder = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, _b, cartIds, paymentMethod, _c, couponIds, carts, productPrices, totalPrice, user, discount, validCouponIds, coupons, newBalance, wallet, order;
+            var _a, _b, cartIds, paymentMethod, _c, couponIds, carts, productPrices, totalPrice, user, discount, validCouponIds, coupons, newBalance, wallet, code, order;
             var _this = this;
             return __generator(this, function (_d) {
                 switch (_d.label) {
@@ -185,8 +187,11 @@ var OrderRoute = /** @class */ (function (_super) {
                         _d.sent();
                         newBalance = wallet.balance;
                         _d.label = 9;
-                    case 9:
+                    case 9: return [4 /*yield*/, order_helper_1.OrderHelper.generateOrderCode()];
+                    case 10:
+                        code = _d.sent();
                         order = new order_model_1.default({
+                            code: code,
                             userId: req.tokenInfo._id,
                             cartIds: cartIds,
                             paymentMethod: paymentMethod,
@@ -196,10 +201,13 @@ var OrderRoute = /** @class */ (function (_super) {
                             couponIds: validCouponIds,
                         });
                         return [4 /*yield*/, order.save()];
-                    case 10:
+                    case 11:
                         _d.sent();
                         return [4 /*yield*/, cart_model_1.CartModel.updateMany({ _id: { $in: cartIds } }, { $set: { status: model_const_1.CartStatusEnum.SUCCESS } })];
-                    case 11:
+                    case 12:
+                        _d.sent();
+                        return [4 /*yield*/, (0, mailer_1.sendMail)(user.email, "Thông báo mới", "\n    <h2>Th\u00F4ng b\u00E1o \u0111\u1EB7t h\u00E0ng m\u1EDBi</h2>\n    <p>C\u00F3 m\u1ED9t \u0111\u01A1n h\u00E0ng m\u1EDBi \u0111\u00E3 \u0111\u01B0\u1EE3c \u0111\u1EB7t. Vui l\u00F2ng ki\u1EC3m tra v\u00E0 x\u1EED l\u00FD ngay.</p>\n    <p>M\u00E3 \u0111\u01A1n h\u00E0ng: ".concat(order.code, "</p>\n  "))];
+                    case 13:
                         _d.sent();
                         res.status(200).json({
                             status: 200,

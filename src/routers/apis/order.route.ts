@@ -14,6 +14,8 @@ import WalletModel from "../../model/wallet/wallet.model";
 import OrderModel from "../../model/order/order.model";
 import { CartStatusEnum, OrderStatusEnum } from "../../constants/model.const";
 import { CouponModel } from "../../model/coupon/coupon.model";
+import { sendMail } from "../../helper/mailer";
+import { OrderHelper } from "../../model/order/order.helper";
 
 class OrderRoute extends BaseRoute {
   constructor() {
@@ -80,7 +82,6 @@ class OrderRoute extends BaseRoute {
       throw ErrorHelper.requestDataInvalid("request data");
     }
 
-    
     const carts = await CartModel.find({ _id: { $in: cartIds } });
     if (!carts || carts.length === 0) {
       throw ErrorHelper.forbidden("Không tìm thấy giỏ hàng");
@@ -102,7 +103,6 @@ class OrderRoute extends BaseRoute {
     let validCouponIds: any[] = [];
 
     if (couponIds.length > 0) {
-
       const coupons = await CouponModel.find({ _id: { $in: couponIds } });
 
       coupons.forEach((coupon) => {
@@ -119,7 +119,6 @@ class OrderRoute extends BaseRoute {
 
       if (discount > totalPrice) discount = totalPrice;
       totalPrice -= discount;
-
 
       if (validCouponIds.length > 0) {
         await UserModel.updateOne(
@@ -138,27 +137,36 @@ class OrderRoute extends BaseRoute {
 
       wallet.balance -= totalPrice;
       await wallet.save();
-      newBalance = wallet.balance; 
+      newBalance = wallet.balance;
     }
 
-  
+    let code = await OrderHelper.generateOrderCode();
+
     let order = new OrderModel({
+      code: code,
       userId: req.tokenInfo._id,
       cartIds: cartIds,
       paymentMethod: paymentMethod,
       status: OrderStatusEnum.PENDING,
       totalPrice: totalPrice,
       paid: paymentMethod === "WALLET",
-      couponIds: validCouponIds, 
+      couponIds: validCouponIds,
     });
     await order.save();
 
- 
     await CartModel.updateMany(
       { _id: { $in: cartIds } },
       { $set: { status: CartStatusEnum.SUCCESS } }
     );
-
+    await sendMail(
+      user.email,
+      "Thông báo mới",
+      `
+    <h2>Thông báo đặt hàng mới</h2>
+    <p>Có một đơn hàng mới đã được đặt. Vui lòng kiểm tra và xử lý ngay.</p>
+    <p>Mã đơn hàng: ${order.code}</p>
+  `
+    );
     res.status(200).json({
       status: 200,
       code: "200",

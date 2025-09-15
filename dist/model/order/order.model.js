@@ -37,6 +37,7 @@ exports.OrderSchema = void 0;
 var mongoose_1 = __importStar(require("mongoose"));
 var model_const_1 = require("../../constants/model.const");
 exports.OrderSchema = new mongoose_1.default.Schema({
+    code: { type: String },
     userId: { type: mongoose_1.Schema.Types.ObjectId, ref: "User" },
     cartIds: [{ type: String }],
     price: { type: Number },
