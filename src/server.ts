@@ -12,7 +12,10 @@ const MONGO_URI =process.env.MONGO_URI;
 
 app.use(
   cors({
-    origin: ["https://web-tournament.vercel.app"], // 🟢 domain FE deploy trên Vercel
+    origin: ["https://web-tournament.vercel.app",
+      "http://localhost:5173",   
+    ], // 🟢 domain FE deploy trên Vercel
+    
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-token"],
     credentials: true,
