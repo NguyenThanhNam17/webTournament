@@ -40,6 +40,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var express_1 = __importDefault(require("express"));
+var cors_1 = __importDefault(require("cors"));
 var dotenv_1 = __importDefault(require("dotenv"));
 var mongoose_1 = __importDefault(require("mongoose"));
 var routers_1 = __importDefault(require("./routers"));
@@ -47,6 +48,7 @@ dotenv_1.default.config();
 var app = (0, express_1.default)();
 var PORT = process.env.PORT;
 var MONGO_URI = process.env.MONGO_URI;
+app.use((0, cors_1.default)());
 app.use(express_1.default.json()); // parse application/json
 app.use(express_1.default.urlencoded({ extended: true })); // parse application/x-www-form-urlencoded
 //connect to MongoDB
